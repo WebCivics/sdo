@@ -1,0 +1,39 @@
+PREFIX sh: <http://www.w3.org/ns/shacl#>
+PREFIX wc: <https://webcivics.org/ns#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# 1. Mandating the Treasury State on all Standards
+wc:StandardTreasuryShape
+    a sh:NodeShape ;
+    sh:targetClass wc:StandardProposal ;
+    
+    # Prevents a standard from existing without an economic anchor
+    sh:property [
+        sh:path wc:hasTreasuryState ;
+        sh:class wc:TreasuryState ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Every standard must have exactly one Treasury State to govern economic inputs." ;
+    ] .
+
+# 2. Validating the Internal Treasury Architecture
+wc:TreasuryStateShape
+    a sh:NodeShape ;
+    sh:targetClass wc:TreasuryState ;
+    
+    # Requires at least one valid cryptographic receiving address
+    sh:property [
+        sh:path wc:receivingAddress ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "The Treasury State must list at least one verifiable cryptographic receiving address." ;
+    ] ;
+    
+    # 3. Bridging to the Solidarity Graph
+    # Ensures the Treasury is connected to the historical Restorative nquins for routing
+    sh:property [
+        sh:path wc:hasDistributionMatrix ;
+        sh:class wc:SolidarityRoutingTable ;
+        sh:minCount 1 ;
+        sh:message "The Treasury State must bind to a Solidarity Routing Table to execute restorative justice payments." ;
+    ] .

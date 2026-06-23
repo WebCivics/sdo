@@ -1,0 +1,31 @@
+PREFIX wc: <https://webcivics.org/ns#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX sec: <https://w3id.org/security#>
+
+# The edge-optimized bouncer for explicit sponsorship claims
+wc:ExplicitSponsorshipShape {
+    a [wc:SponsorshipClaim] ;
+    
+    # 1. The Sponsor's Enumerated State Binding
+    wc:sponsorState IRI ;
+    
+    # 2. Target Standard and Financial Proofs
+    wc:targetStandard IRI ;
+    wc:transactionHash xsd:string ;
+    wc:contributionAmount xsd:decimal ;
+    wc:currency IRI ;
+    
+    # 3. Structural Constraints for the Solidarity Graph Matrix
+    # Ensures the sponsor explicitly agrees to the restorative routing rules
+    wc:agreesToRestorativeRouting [true] ;
+    
+    # 4. Edge Cryptographic Verification
+    sec:proof @wc:ProofShape ;
+}
+
+wc:ProofShape {
+    a [sec:Ed25519Signature2020 sec:JsonWebSignature2020] ;
+    sec:verificationMethod IRI ;
+    sec:proofPurpose IRI ;
+    sec:proofValue xsd:string ;
+}

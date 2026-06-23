@@ -1,0 +1,40 @@
+PREFIX wc: <https://webcivics.org/ns#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX sec: <https://w3id.org/security#>
+
+# Base Ingestion Shape for a Restorative Value Nquin
+# This acts as the strict structural bouncer at the edge node.
+
+wc:RestorativeValueShape {
+    # 1. Agent State Verification
+    # Ensures the payload originates from a recognized, cryptographically secure source.
+    # Must be a valid URI representing the enumerated agent state (e.g., did:q42:...)
+    wc:agentState IRI ;
+    
+    # 2. Support Typology
+    # Explicit categorization of the nature of the restorative claim.
+    wc:supportCategory [ wc:Sustenance wc:ProBonoLabor wc:Shelter wc:Infrastructure ] ;
+    
+    # 3. Temporal Boundaries
+    # The chronological scope of the support provided.
+    prov:startedAtTime xsd:dateTime ;
+    prov:endedAtTime xsd:dateTime ;
+    
+    # 4. Target Graph Link
+    # Connects the support directly to the resulting collaborative output.
+    wc:supportsWork IRI ;
+    
+    # 5. Cryptographic Signature
+    # Secures the immutability of the claim, linking to a valid Proof shape.
+    sec:proof @wc:SignatureShape ;
+}
+
+# Sub-shape defining the Cryptographic Signature requirements
+wc:SignatureShape {
+    sec:type xsd:string ;
+    sec:created xsd:dateTime ;
+    sec:proofPurpose xsd:string ;
+    sec:verificationMethod IRI ;
+    sec:proofValue xsd:string ;
+}

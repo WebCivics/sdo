@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>did:q42 Method Specification</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="https://www.w3.org/Tools/respec/respec-w3c" class="remove" defer></script>
+  <script class="remove">
+    var respecConfig = {
+      specStatus: "CG-DRAFT",
+      shortName: "did-q42",
+      editors: [{
+        name: "WebCivics Contributor",
+        url: "https://webcivics.org"
+      }],
+      github: "webcivics/sdo",
+      edDraftURI: "https://sdo.webcivics.org/did-q42.html",
+      group: "WebCivics Community Group",
+      localBiblio: {
+        "TREASURY": {
+          title: "WebCivics Treasury State",
+          href: "https://webcivics.org/ns#TreasuryState"
+        }
+      }
+    };
+  </script>
+</head>
+<body>
+  <section id="abstract">
+    <p>This document defines the current implementation reality and intended standardization path for the <code>did:q42</code> method within the Qualia Protocol Ecosystem.</p>
+  </section>
+
+  <section id="sotd">
+    <p>This is an internal draft being transitioned into the WebCivics Standards Documentation Engine architecture.</p>
+  </section>
+
+  <section>
+    <h2>Role</h2>
+    <p><code>did:q42</code> is currently used inside QualiaDB as a compact method-specific identifier that marks a topological pointer or pointer-derived identifier token inside Quin execution paths.</p>
+    <p>At present, the method is:</p>
+    <ul>
+      <li>A machine-facing identifier form</li>
+      <li>A routing and dispatch signal inside the engine</li>
+      <li>A bridge between textual RDF input and a 64-bit encoded Quin value</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Method Name</h2>
+    <p>The method name is: <code>q42</code></p>
+    <p>The full DID prefix is: <code>did:q42:</code></p>
+  </section>
+
+  <section>
+    <h2>Current Syntax Contract</h2>
+    <p>The current parser enforces two rules:</p>
+    <ol>
+      <li>The identifier starts with <code>did:q42:</code></li>
+      <li>The payload after that prefix is non-empty</li>
+    </ol>
+    <pre class="example">did:q42:&lt;method-specific-id&gt;</pre>
+  </section>
+
+  <section id="sponsorship-and-funding">
+    <h2>Sponsorship & Funding</h2>
+    <p>This standard effort is actively sustained by the WebCivics Treasury State. The dynamic ledger of sponsorships is cryptographically verified against the Solidarity Graph.</p>
+    <table class="simple">
+      <thead>
+        <tr>
+          <th>Sponsor (Enumerated State)</th>
+          <th>Contribution</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td colspan="2"><em>Ledger dynamically synchronized via SHACL execution in Qualiadb</em></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</body>
+</html>

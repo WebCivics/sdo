@@ -1,0 +1,68 @@
+PREFIX sh: <http://www.w3.org/ns/shacl#>
+PREFIX wc: <https://webcivics.org/ns#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX sec: <https://w3id.org/security#>
+
+# 1. Targeting the Normative Class
+wc:StandardProposalShape
+    a sh:NodeShape ;
+    sh:targetClass wc:StandardProposal ;
+
+    # 2. The Covenant Property Audit
+    sh:property [
+        sh:path wc:hasCovenant ;
+        sh:class wc:NonAssertionCovenant ;
+        sh:minCount 1 ;
+    ] ;
+
+    # 3. Prior Art Encumbrance Checks (Recursive Traversal)
+    sh:property [
+        sh:path [ sh:zeroOrMorePath wc:buildsUpon ] ; 
+        sh:node wc:PriorArtClearanceShape ;
+        sh:message "A prior art nquin in the lineage lacks cryptographic IPR clearance." ;
+    ] ;
+
+    # 5. SHACL-SPARQL Cross-Property Validation for Agent Signatures
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "The enumerated state of the agent submitting the proposal does not match the agent bound to the attached Non-Assertion Covenant." ;
+        sh:prefixes [
+            sh:declare [
+                sh:prefix "wc" ;
+                sh:namespace "https://webcivics.org/ns#"^^xsd:anyURI ;
+            ]
+        ] ;
+        sh:select """
+            SELECT $this WHERE {
+                $this wc:submittedBy ?submitter .
+                $this wc:hasCovenant ?covenant .
+                ?covenant wc:boundAgentState ?boundAgent .
+                FILTER (?submitter != ?boundAgent)
+            }
+        """ ;
+    ] .
+
+# 4. Validating the Enumerated State Binding
+wc:PriorArtClearanceShape
+    a sh:NodeShape ;
+    sh:property [
+        sh:path wc:hasCovenant ;
+        sh:class wc:NonAssertionCovenant ;
+        sh:minCount 1 ;
+    ] .
+
+wc:NonAssertionCovenantShape
+    a sh:NodeShape ;
+    sh:targetClass wc:NonAssertionCovenant ;
+    
+    sh:property [
+        sh:path wc:boundAgentState ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 1 ;
+    ] ;
+    
+    sh:property [
+        sh:path sec:proof ;
+        sh:minCount 1 ;
+    ] .

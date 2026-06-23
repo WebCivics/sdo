@@ -1,0 +1,30 @@
+PREFIX wc: <https://webcivics.org/ns#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# The Root Solidarity Matrix assigned to the Treasury State
+wc:DefaultSolidarityMatrix a wc:SolidarityRoutingTable ;
+    
+    # Weighting for physical shelter and housing support
+    wc:distributesTo [
+        a wc:CategoricalWeight ;
+        wc:supportCategory wc:Shelter ;
+        wc:baseMultiplier "2.0"^^xsd:decimal ;
+        wc:calculationMethod "Duration * BaseMultiplier * GlobalMinimumBaseline" ;
+    ] ;
+    
+    # Weighting for food, utilities, and baseline survival metrics
+    wc:distributesTo [
+        a wc:CategoricalWeight ;
+        wc:supportCategory wc:Sustenance ;
+        wc:baseMultiplier "1.5"^^xsd:decimal ;
+        wc:calculationMethod "Duration * BaseMultiplier * GlobalMinimumBaseline" ;
+    ] ;
+    
+    # Weighting for unpaid technical, administrative, or legal labor
+    wc:distributesTo [
+        a wc:CategoricalWeight ;
+        wc:supportCategory wc:ProBonoLabor ;
+        wc:baseMultiplier "1.0"^^xsd:decimal ;
+        # Labor maps cleanly to local living wage equivalents
+        wc:calculationMethod "Duration * BaseMultiplier * RegionalLivingWage" ;
+    ] .

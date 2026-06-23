@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Context Markup Language &amp; Definitions (CML / CMLD)</title>
+  <script src="https://w3c.github.io/respec/builds/respec-w3c.js" class="remove" async></script>
+  <script class="remove">
+    var respecConfig = {
+      specStatus: "CG-DRAFT",
+      shortName: "cml-cmld",
+      editors: [{
+        name: "Timothy C. Holborn",
+        company: "WebCivics",
+        url: "https://www.linkedin.com/in/ubiquitous/"
+      }],
+      github: "https://github.com/mediaprophet/qualiaDB",
+      edDraftURI: "https://ns.webcivics.net/cml/",
+      includePermalinks: true,
+      license: "w3c-software-doc",
+      processVersion: 2023,
+      abstract: `
+        <p>
+          The <strong>Context Markup Language (CML)</strong> binds verbatim source text to
+          machine-readable <em>concepts</em> and the <em>logic</em> that governs them, so software
+          agents — including Large Language Models — infer meaning accurately rather than
+          probabilistically. CML's defining move is that <strong>a concept is a context hash</strong>:
+          a concept's identifier is hashed into the context field of a 48-byte binary record, and the
+          concept's sub-graph is every record sharing that hash.
+          <strong>Context Markup Language Definitions (CMLD)</strong> is the companion layer that maps
+          the surface terms people write onto those concepts. Both support Human-Centric AI (HCAI)
+          principles — accuracy, transparency, fairness, and trust for natural persons — and are
+          realised natively on the QualiaDB engine.
+        </p>`,
+      sotd: `
+        <p>
+          This is an unofficial Community-Group-style draft, proposed for discussion. It has not been
+          endorsed by the W3C or any standards body. This revision <strong>tracks the implemented
+          QualiaDB / WebCivics design</strong> (the axioms in <code>core-ontologies/cml.n3</code> and
+          the engine's context-hash model); where this document and the earlier pre-implementation
+          drafts differ, the implemented solution governs. The revision was produced with AI tooling
+          used as an instrument; the tool is not an author.
+        </p>`,
+      localBiblio: {
+        "DID-CORE": { title: "Decentralized Identifiers (DIDs) v1.0", href: "https://www.w3.org/TR/did-core/", publisher: "W3C", date: "2022" },
+        "SKOS": { title: "SKOS Simple Knowledge Organization System Reference", href: "https://www.w3.org/TR/skos-reference/", publisher: "W3C", date: "2009" },
+        "Web-Annotation": { title: "Web Annotation Data Model", href: "https://www.w3.org/TR/annotation-model/", publisher: "W3C", date: "2017" },
+        "PROV-O": { title: "PROV-O: The PROV Ontology", href: "https://www.w3.org/TR/prov-o/", publisher: "W3C", date: "2013" },
+        "ODRL": { title: "ODRL Information Model 2.2", href: "https://www.w3.org/TR/odrl-model/", publisher: "W3C", date: "2018" },
+        "SHACL": { title: "Shapes Constraint Language (SHACL)", href: "https://www.w3.org/TR/shacl/", publisher: "W3C", date: "2017" },
+        "CBOR-LD": { title: "CBOR-LD 1.0", href: "https://json-ld.github.io/cbor-ld-spec/", publisher: "W3C CCG", date: "2024" },
+        "RFC2119": { title: "Key words for use in RFCs to Indicate Requirement Levels", href: "https://tools.ietf.org/html/rfc2119", publisher: "IETF", date: "1997" },
+        "RFC5147": { title: "URI Fragment Identifiers for the text/plain Media Type", href: "https://tools.ietf.org/html/rfc5147", publisher: "IETF", date: "2008" },
+        "BCP47": { title: "Tags for Identifying Languages", href: "https://tools.ietf.org/html/bcp47", publisher: "IETF", date: "2009" },
+        "EU-AI-ACT": { title: "Artificial Intelligence Act", href: "https://digital-strategy.ec.europa.eu/en/policies/artificial-intelligence-act", publisher: "European Commission", date: "2024" }
+      }
+    };
+  </script>
+</head>
+<body>
+  <section id="abstract">
+    <p>
+      The Context Markup Language (CML) binds verbatim source text to machine-readable concepts and
+      the logic that governs them; Context Markup Language Definitions (CMLD) maps surface terms onto
+      those concepts. Both are realised natively on the QualiaDB engine and support Human-Centric AI.
+    </p>
+  </section>
+
+  <section id="sotd"></section>
+
+  <section class="informative">
+    <h2>Introduction</h2>
+    <p>
+      Software agents, particularly LLMs, struggle to disambiguate terms with multiple meanings
+      ("bank" the institution vs. the riverbank; "physician" the person vs. the practice). Existing
+      semantic-web forms (RDFa, JSON-LD) are author-heavy and not optimised for agent inference or for
+      Human-Centric AI [[EU-AI-ACT]]. CML provides <em>declarative, machine-readable context</em> so
+      meaning is <em>stated</em>, not guessed.
+    </p>
+    <p>
+      An earlier draft of CML proposed inline <code>&lt;cml:context&gt;</code> HTML elements and an
+      external <code>.ctx</code> JSON file (CMLD). The implemented system keeps that <em>purpose</em>
+      but realises it as a <strong>concept-graph layer native to the engine</strong>: the inline-element
+      and sidecar-file mechanisms are superseded by the concept-as-context-hash model defined here.
+    </p>
+  </section>
+
+  <section>
+    <h2>Terminology</h2>
+    <p>
+      The key words <em>MUST</em>, <em>MUST NOT</em>, <em>REQUIRED</em>, <em>SHOULD</em>,
+      <em>SHOULD NOT</em>, <em>MAY</em>, and <em>OPTIONAL</em> are to be interpreted as in [[RFC2119]].
+    </p>
+    <dl>
+      <dt>CML</dt><dd>Context Markup Language — the concept-graph layer (a concept is a context hash).</dd>
+      <dt>CMLD</dt><dd>Context Markup Language Definitions — bindings of a surface term to a context DID (a concept).</dd>
+      <dt>Concept</dt><dd>A first-class node (<code>cml:Concept</code> ⊑ <code>skos:Concept</code>) realised as a context hash that owns a logic sub-graph.</dd>
+      <dt>Context hash</dt><dd>The 56-bit value (bits <code>[0..55]</code>) in the <code>context</code> field of the 48-byte Super-Quin; <code>q_hash(concept&nbsp;IRI)</code>.</dd>
+      <dt>Super-Quin / NQuin</dt><dd>The engine's 48-byte record: six <code>u64</code> vectors <code>[subject, predicate, object, context, metadata, parity]</code>.</dd>
+      <dt>Software agent</dt><dd>A program (e.g. an LLM) that processes content for tasks like disambiguation.</dd>
+    </dl>
+  </section>
+
+  <section>
+    <h2>Namespace</h2>
+    <p>
+      The CML namespace (the term <em>identifiers</em>) is <code>https://ns.webcivics.net/cml/</code>
+      (prefix <code>cml:</code>); the published schema-definition ("sdo") documents resolve at
+      <code>https://sdo.webcivics.org/</code>. The authoritative machine axioms are published as
+      <code>core-ontologies/cml.n3</code>. CML composes — rather
+      than re-invents — established vocabularies: SKOS [[SKOS]], Web Annotation [[Web-Annotation]],
+      PROV-O [[PROV-O]], ODRL [[ODRL]], OWL-Time, GeoSPARQL, and the Security Vocabulary; plus the
+      WebCivics <code>values:</code> human-rights agent lattice.
+    </p>
+  </section>
+
+  <section>
+    <h2>The concept-as-context-hash model</h2>
+    <p>
+      CML's load-bearing idea: <strong>a concept <em>is</em> a context hash.</strong> A concept IRI is
+      hashed (<code>q_hash</code>) into the 56-bit context field (bits <code>[0..55]</code>) of the
+      Super-Quin (Vector 4). The concept's sub-graph is <em>every quin whose <code>context</code>
+      equals that hash</em>. This is the engine's native named-graph mechanism — <em>a document is a
+      query for all quins intersecting a context hash</em> — so logic libraries (deontic, temporal,
+      defeasible) run against a concept by <strong>masking on its context hash</strong>, without
+      loading the whole graph.
+    </p>
+    <p>
+      <code>cml:Concept</code> is <code>rdfs:subClassOf skos:Concept</code> and is modelled in
+      <strong>RDFS + SHACL, never OWL</strong>, for the given world (see
+      <a href="#owl-boundary">the modeling discipline</a>).
+    </p>
+  </section>
+
+  <section>
+    <h2>The three-layer model</h2>
+    <p>Nanopublication-aligned: an assertion graph (LOGIC) + a provenance graph (the realization) + pub-info (the curation signature).</p>
+    <ul>
+      <li><strong>TEXT</strong> — verbatim <code>originalText</code>, immutable (legal fidelity), stored cold in the <code>.q42</code> front-of-file lexicon and recoverable from the archive alone.</li>
+      <li><strong>CONCEPT</strong> — a context hash that owns a sub-graph; carries <code>skos:prefLabel</code>/<code>skos:definition</code>; related via SKOS. Linked to text by <code>cml:realizedBy</code> (a Web Annotation media-fragment selector + integrity hash). Many fragments — across instruments, languages, amended text — may realise one concept.</li>
+      <li><strong>LOGIC</strong> — per-concept modality sub-graphs evaluated by the deterministic Sentinel VM, masked on the concept's context hash. The deontic sub-graph compiles to native operators (Obligate / Permit / Forbid) with <code>q42:unless</code> defeaters.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>CML vocabulary</h2>
+    <table>
+      <tr><th>Term</th><th>Kind</th><th>Meaning</th></tr>
+      <tr><td><code>cml:Concept</code></td><td>class (⊑ <code>skos:Concept</code>)</td><td>A concept realised as a context hash owning a logic sub-graph.</td></tr>
+      <tr><td><code>cml:realizedBy</code></td><td>property</td><td>Concept ← a verbatim text span (an <code>oa:Annotation</code>: RFC&nbsp;5147 <code>#char=</code> + <code>oa:TextQuoteSelector</code> + integrity hash) [[RFC5147]].</td></tr>
+      <tr><td><code>cml:integrityHash</code></td><td>property</td><td>Hash of the span, verified against the recovered <code>originalText</code>.</td></tr>
+      <tr><td><code>cml:CurationStatus</code>, <code>cml:Proposed</code>, <code>cml:Attested</code></td><td>class / instances</td><td>Provisional (machine) vs confirmed (signed authoritative human).</td></tr>
+      <tr><td><code>cml:curationStatus</code>, <code>cml:proposedBy</code>, <code>cml:attestedBy</code>, <code>cml:confidence</code></td><td>properties</td><td>The curation record (who proposed / who ratified with a <code>sec:</code> proof / machine confidence ∈ [0,1]).</td></tr>
+      <tr><td><code>cml:RecognitionBasis</code>, <code>cml:recognitionBasis</code></td><td>class / property</td><td>Recognition of Prior Learning is first-class: <code>Formal</code> / <code>PriorLearning</code> / <code>Experiential</code> / <code>PeerAttested</code>.</td></tr>
+      <tr><td><code>cml:Modality</code>, <code>cml:asserts</code>, <code>cml:modality</code></td><td>class / properties</td><td>Binds a concept to a logic assertion in a modality sub-graph (<code>Deontic</code>/<code>Temporal</code>/<code>Defeasible</code>/<code>Argumentation</code>/<code>Spatial</code>/<code>Probabilistic</code>); the asserted quins carry <code>context = q_hash(concept&nbsp;IRI)</code>.</td></tr>
+      <tr><td><code>cml:schemaVersion</code>, <code>cml:generatedBy</code></td><td>properties</td><td>Per-generated-concept stamps for reproducibility and staleness detection.</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>The Curation Prime Directive</h2>
+    <p>
+      <strong>Automated systems <em>MAY</em> assert only <code>skos:closeMatch</code> or
+      <code>skos:related</code>. Only a cryptographically-signed human action <em>MAY</em> assert
+      <code>skos:exactMatch</code>.</strong> Concept identity is curation-grade: auto-asserting
+      sameness from vector proximity would re-create the algorithmic flattening this system exists to
+      defeat. The machine <em>proposes</em> (<code>cml:Proposed</code>, with a confidence); a human
+      <em>disposes</em> (<code>cml:Attested</code>, with a <code>sec:</code> signature). This is enforced
+      closed-world by a SHACL [[SHACL]] shape (<code>cml:AttestedExactMatchShape</code>): a
+      machine-written <code>exactMatch</code> without a ratifying attestation is a conduct violation.
+    </p>
+    <pre class="example" title="cml:AttestedExactMatchShape (SHACL)">
+cml:AttestedExactMatchShape a sh:NodeShape ;
+    sh:targetSubjectsOf skos:exactMatch ;
+    sh:property [ sh:path cml:curationStatus ; sh:hasValue cml:Attested ; sh:minCount 1 ;
+                  sh:message "skos:exactMatch requires cml:Attested (a signed authoritative human action)." ] .</pre>
+  </section>
+
+  <section id="cmld">
+    <h2>CMLD — Context Markup Language Definitions</h2>
+    <p>
+      CMLD maps the surface terms people write onto concepts. A CMLD definition is a binding
+      <code>term → context DID</code>, where the context DID denotes a CML concept (its IRI hashes to
+      the concept's context hash). A "Context Markup <em>Document</em>" is the set of CMLD definitions
+      that give a body of content its declared meanings, layered over the immutable TEXT.
+    </p>
+    <ul>
+      <li><strong>Authoring:</strong> <code>upsert_cmld_definition(term, context_did)</code> records that <code>term</code> resolves to <code>context_did</code>.</li>
+      <li><strong>Resolution:</strong> on ingest, CML/CMLD URIs are resolved against the dynamic <em>Ontology Registry</em>; the term's <code>context_did</code> selects the concept's sub-graph, so the agent reads the intended meaning and the logic bound to it.</li>
+      <li><strong>One hash-space:</strong> because the definition's <code>context_did</code> <em>is</em> the concept's context hash, a CMLD definition joins directly into the concept graph — no separate index, no duplication.</li>
+    </ul>
+    <p>
+      CMLD definitions are CML-governed: a binding is <code>cml:Proposed</code> when machine-suggested
+      and <code>cml:Attested</code> only on a signed human action; a sameness binding
+      (<code>skos:exactMatch</code>) is subject to the Curation Prime Directive above.
+    </p>
+    <p class="note">
+      Implementation status: the registry API and ingest-time resolution exist as the engine surface;
+      full persistence and the document-ingest path are being wired. This section specifies the design
+      the implementation embodies, not a claim of end-to-end completeness.
+    </p>
+  </section>
+
+  <section id="owl-boundary">
+    <h2>Modeling discipline — the OWL boundary &amp; SHACL firewall</h2>
+    <ul>
+      <li><strong>World of man (constructed)</strong> — legal persons, institutions, treaties, contracts, software agents, artifacts — <em>MAY</em> use OWL.</li>
+      <li><strong>Natural world, including humans (given)</strong> — natural persons, ecology, observations — <em>MUST</em> use RDFS + SHACL, never OWL. A person is not an <code>owl:Thing</code> to be classified into existence.</li>
+      <li><strong>External mappings carry reference, not ontological commitment</strong> — a <code>skos:closeMatch</code> to <code>schema:Physician</code> adopts the identifier for interop/disambiguation but never inherits its class axioms (never <code>Physician&nbsp;⊑&nbsp;Place</code>). The boundary is a bidirectional firewall.</li>
+      <li><strong>Two enforcement layers compose</strong> — the Deontic + Temporal VM answers <em>is this norm binding now?</em> (Active / Defeated / Expired); SHACL answers <em>does reality comply?</em>, and a shape is applicable only while its norm is Active. The VM adjudicates validity; SHACL enforces compliance.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Serialization, layered outputs &amp; the engine</h2>
+    <ul>
+      <li><strong>SOURCE / interchange:</strong> RDF / N3 / Turtle (the <code>cml.n3</code> axioms and <code>concepts/*.n3</code>).</li>
+      <li><strong>Wire:</strong> CBOR-LD [[CBOR-LD]] is the primary transmission serialization (one hash-space; <code>@context</code> expansion).</li>
+      <li><strong>Execution:</strong> the unified <code>.q42</code> archive — header → lexicon → block index → block-dir → LZ4 40&nbsp;KB SuperBlocks — preserving a two-step range fetch (fetch the small index; one HTTP Range for the single block).</li>
+    </ul>
+    <p>Per source instrument the corpus emits three layers:</p>
+    <ol>
+      <li><code>*.n3</code> — foundational N3/Turtle + N3Logic rules + SHACL shapes (SOURCE, human-curated).</li>
+      <li><code>*.cml.html</code> — the CML-annotated human-readable rendering (GENERATED).</li>
+      <li><code>*.q42</code> — the engine-native compiled volume (GENERATED).</li>
+    </ol>
+    <p>
+      The generated concept layer is reproducible from SOURCE at a stamped <code>cml:schemaVersion</code>;
+      regeneration rewrites only the machine-<code>cml:Proposed</code> layer and never touches human
+      <code>cml:Attested</code> attestations — the property that lets the logic→CML pipeline be re-run
+      freely.
+    </p>
+  </section>
+
+  <section>
+    <h2>Examples</h2>
+    <section>
+      <h3>A concept with text, logic, and provenance</h3>
+      <p>The implemented pilot — a treaty duty as a concept that owns a deontic sub-graph:</p>
+      <pre class="example" title="concept:DutyToSuppressForcedLabour">
+# TEXT (immutable, recovered from the .q42 lexicon)
+&lt;…convention-105#article-1&gt; values:originalText
+  "Each Member … undertakes to suppress and not to make use of any form of forced or compulsory labour …" .
+
+# CONCEPT (context hash = q_hash("concept:DutyToSuppressForcedLabour"))
+concept:DutyToSuppressForcedLabour
+    a            cml:Concept ;
+    skos:prefLabel "duty to suppress forced labour"@en ;
+    cml:realizedBy [ a oa:Annotation ;
+                     oa:hasTarget [ oa:hasSource &lt;…convention-105#article-1&gt; ;
+                                    oa:hasSelector [ a oa:FragmentSelector ; rdf:value "char=0,87" ] ] ] ;
+    cml:curationStatus cml:Proposed ;
+    cml:asserts  [ a values:Obligation ; values:borneBy values:State ;
+                   values:requires act:suppressForcedLabour ] .   # → OP_OBLIGATE in context Cdsf</pre>
+      <p>Evaluating context <code>Cdsf</code>: an <strong>Active</strong> obligation borne by the
+      ratifying party; an <code>unless lawfully-authorised</code> defeater in the same sub-graph flips
+      it to <strong>Defeated</strong>.</p>
+    </section>
+    <section>
+      <h3>A CMLD definition disambiguating a term</h3>
+      <pre class="example" title="term → concept (CMLD)">
+# upsert_cmld_definition("bank", "did:webizen:concept:FinancialInstitution")
+# resolves, at ingest, to the concept whose context hash = q_hash(that concept IRI):
+"bank"  skos:closeMatch  concept:FinancialInstitution ;   # machine-proposed
+        cml:curationStatus cml:Proposed .
+# a riverbank document would bind "bank" → concept:Riverbank instead.</pre>
+    </section>
+  </section>
+
+  <section>
+    <h2>Human-Centric AI alignment</h2>
+    <ul>
+      <li><strong>Accurate inference</strong> — declared concepts replace probabilistic guessing.</li>
+      <li><strong>Transparency / explainability</strong> — an agent can cite the concept, its realizing text span, and its provenance.</li>
+      <li><strong>Fairness / inclusivity</strong> — multi-lingual realizations and curated concepts reduce dominant-meaning bias; the man-made/natural boundary refuses to redefine the given world.</li>
+      <li><strong>Trust / accountability</strong> — the Curation Prime Directive makes sameness a signed human act, not a machine assertion.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Security &amp; privacy considerations</h2>
+    <ul>
+      <li>Agents <em>MUST</em> validate URIs and DIDs before resolution [[DID-CORE]].</li>
+      <li>Authors <em>SHOULD</em> avoid sensitive data in concept labels/definitions; personal data is modelled via credentials over a fabric of identifiers, not as public literals.</li>
+      <li>Sameness assertions (<code>skos:exactMatch</code>) <em>MUST</em> be human-attested with a <code>sec:</code> proof (the Prime Directive), preventing silent machine flattening.</li>
+    </ul>
+  </section>
+
+  <section id="conformance">
+    <p>
+      Conformance requirements use [[RFC2119]] terminology. A conforming implementation <em>MUST</em>
+      realise concepts as context hashes, honour the three-layer separation (immutable TEXT), and
+      enforce the Curation Prime Directive (machine <code>closeMatch</code>; human-attested
+      <code>exactMatch</code>) via the SHACL firewall.
+    </p>
+  </section>
+
+  <section id="qualia-engine-implementation" class="informative">
+    <h2>QualiaDB engine implementation note</h2>
+    <ul>
+      <li><strong>Serialization:</strong> RDF / RDF-star at the model layer; <strong>CBOR-LD</strong> on the wire; a 48-byte binary Super-Quin in the <code>.q42</code> archive for execution.</li>
+      <li><strong>Logic &amp; constraints:</strong> a native N3 streaming parser; explicit deontic operators (Obligate / Permit / Forbid) with <code>q42:unless</code> defeaters; SHACL for compliance.</li>
+      <li><strong>Conflict &amp; state:</strong> CRDT (Lamport-clock LWW) and paraconsistent routing manage temporally-bound state and contradictions (Allen interval / LTL) without system-wide failure.</li>
+    </ul>
+  </section>
+
+  <section id="acknowledgments">
+    <p>Thanks to the W3C Semantic Web, Decentralized Identifier, and Credentials communities, and to Wikidata and Schema.org as external reference vocabularies.</p>
+  </section>
+</body>
+</html>
